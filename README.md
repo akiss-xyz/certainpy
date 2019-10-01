@@ -19,7 +19,7 @@ How do I use this?
 Simply `from certainpy import *`.
 
 And from there you can create your values and start doing whatever you like with them:
-![Using the package](/readme/images/showcase1.png)
+![Using the package](/images/showcase1.png)
 
 
 Using this project

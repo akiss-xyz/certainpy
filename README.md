@@ -19,11 +19,11 @@ How do I use this?
 Simply `from certainpy import *`.
 
 And from there you can create your values and start doing whatever you like with them:
-![Using the package](/readme/images/using-the-package.png)
+![Using the package](/readme/images/showcase1.png)
 
 
 Using this project
 ------------------
 
 This project is under the GNU GPL 3, with no warranty or fitness for any particular purpose. See 
-LICENSE.txt for details. Don't hesitate to get in touch for anything!
+LICENSE for details. Don't hesitate to get in touch for anything!

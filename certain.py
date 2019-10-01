@@ -1,19 +1,24 @@
 #! /usr/bin/python3 -i
 
 from math import atan, asin, sqrt, cos, sin, pi
+import sys
 
+this = sys.modules[__name__]
 
 ## Flags
-PROBABILISTIC_UNCERTAINTIES = True      # Assume that uncertainties are independent, random and 
-                                        # normally distributed and hence in calculations make the
-                                        # appropriate reductions, or if False, instead calculate 
-                                        # maximum, determinate uncertainties.
+this.probabilistic_uncertainties = True
+# Assume that uncertainties are independent, random and 
+# normally distributed and hence in calculations make the
+# appropriate reductions, or if False, instead calculate 
+# maximum, determinate uncertainties.
 
-FORMATTING_EXP = False                  # Print floats as either 0.0040 or 4e-3
+
+this.FORMATTING_EXP = False                  # Print floats as either 0.0040 or 4e-3
 
 # Used by manage_calls decorator, add your owns stuff there to hook into dunder operations
-PRINT_CALL = False                      # Print calls to operators for debug purposes
-PRINT_RESULT = False                    # Print output from functions for debug stuffs
+
+this.PRINT_CALL = False     # Print calls to operators for debug purposes
+this.PRINT_RESULT = False   # Print output from functions for debug stuffs
 
 
 ## Constants
@@ -22,10 +27,10 @@ EPSILON = 0.000000001
 ## Decorators
 def manage_calls(func):
     def wrapper(*args, **kwargs):
-        if PRINT_CALL:
+        if this.PRINT_CALL:
             print(func.__name__ + "(" + str(args) + "|" + str(kwargs) + ")")
         result = func(*args, **kwargs)
-        if PRINT_RESULT:
+        if this.PRINT_RESULT:
             print(f"  = {result}")
         return result
     return wrapper
@@ -100,7 +105,6 @@ def prob_evalfun(fun, args):
     for i in range(len(args)):
         # estimate the partial with respect to arg at values
         partial_with_respect_to_i = partial(fun, i, values)
-        #print(f"partial to {i}: {partial_with_respect_to_i}")
         sum_buffer = sum_buffer + (partial_with_respect_to_i * args[i].unc)**2
 
     unc_ans = sqrt(sum_buffer)
@@ -142,7 +146,7 @@ def nonprob_evalfun(fun, args, no_turning=False):
 
 def evalfun(fun, args, no_turning=False):
     """ Evaluate a general function fun on the Uncertain_Value[s] in args. Deals automatically with
-    whether you want PROBABILISTIC_UNCERTAINTIES, and dispatches accordingly to more specific
+    whether you want probabilistic_uncertainties, and dispatches accordingly to more specific
     functions.
 
     Params
@@ -158,10 +162,10 @@ def evalfun(fun, args, no_turning=False):
         maximum_evaluate(fun, args)
     """
 
-    if no_turning and not PROBABILISTIC_UNCERTAINTIES:
+    if no_turning and not probabilistic_uncertainties:
         return maximum_evaluate(fun, args)
 
-    if PROBABILISTIC_UNCERTAINTIES:
+    if probabilistic_uncertainties:
         return prob_evalfun(fun, args)
     else:
         return nonprob_evalfun(fun, args)
@@ -199,7 +203,7 @@ class Uncertain_Value:
             return Uncertain_Value(self.val + other, self.unc)
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 return Uncertain_Value(self.val + other.val, sqrt(self.unc**2 + other.unc**2))
             else:
                 return Uncertain_Value(self.val + other.val, self.unc + other.unc)
@@ -215,7 +219,7 @@ class Uncertain_Value:
             return Uncertain_Value(self.val - other, self.unc)
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 return Uncertain_Value(self.val - other.val, sqrt(self.unc**2 + other.unc**2))
             else:
                 return Uncertain_Value(self.val - other.val, self.unc + other.unc)
@@ -229,7 +233,7 @@ class Uncertain_Value:
             return Uncertain_Value(other- self.val, self.unc)
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 return Uncertain_Value(other.val - self.val, sqrt(self.unc**2 + other.unc**2))
             else:
                 return Uncertain_Value(other.val - self.val, sqrt(self.unc + other.unc))
@@ -245,7 +249,7 @@ class Uncertain_Value:
             return answer
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 answer = Uncertain_Value(other.val * self.val, 0.0)
                 answer.unc = answer.inverse_fractional( sqrt(self.fractional()**2 + 
                     other.fractional()**2))
@@ -259,7 +263,7 @@ class Uncertain_Value:
         raise TypeError(f"Uncertain_Value.__mul__({self}, {other}) - __mul__ not yet"
                 " implemented for type of other. Try using evalfun and passing it the function.")
 
-    __rmul = __mul__
+    __rmul__ = __mul__
 
     @manage_calls
     def __div__(self, other):
@@ -269,7 +273,7 @@ class Uncertain_Value:
             return answer
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 answer = Uncertain_Value(self.val / other.val, 0.0)
                 answer.unc = answer.inverse_fractional(
                     sqrt(self.fractional()**2 + other.fractional()**2))
@@ -291,7 +295,7 @@ class Uncertain_Value:
             return answer
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 answer = Uncertain_Value(other.val / self.val, 0.0)
                 answer.unc = answer.inverse_fractional(
                     sqrt(self.fractional()**2 + other.fractional()**2))
@@ -313,7 +317,7 @@ class Uncertain_Value:
             return answer
 
         if isinstance(other, Uncertain_Value):
-            if PROBABILISTIC_UNCERTAINTIES:
+            if probabilistic_uncertainties:
                 answer = Uncertain_Value(self.val / other.val, 0.0)
                 answer.unc = answer.inverse_fractional(
                     sqrt(self.fractional()**2 + other.fractional()**2))
@@ -337,7 +341,6 @@ class Uncertain_Value:
                     # evalfun already checks if we're probabilistic
 
         if isinstance(other, Uncertain_Value):
-            #print("pow of two uncertains")
             return evalfun(power, [self, other], no_turning=True)
                     # evalfun already checks if we're probabilistic
 
@@ -454,7 +457,7 @@ class Vec:
         def magnitude(values):
             return sqrt(values[0]**2 + values[1]**2)
 
-        if PROBABILISTIC_UNCERTAINTIES:
+        if probabilistic_uncertainties:
             # evalfun already checks if we're probabilistic, so this is okay
             return evalfun(magnitude, [self.x, self.y])
         else:
@@ -475,7 +478,7 @@ class Vec:
         def inner_angle(values):
             return atan(values[1]/values[0])
 
-        if PROBABILISTIC_UNCERTAINTIES:
+        if probabilistic_uncertainties:
             # Does this belong here? I mean this isn't very probabilistic, is it?
             if self.x == 0:
                 if self.y > 0:
@@ -509,7 +512,7 @@ class Vec:
                 return 0-phi
 
             raise NotImplementedError(f"Vec.__pos__({self}): Evaluating with"
-                            " PROBABILISTIC_UNCERTAINTIES, we slipped through the cracks somehow.")
+                            " probabilistic_uncertainties, we slipped through the cracks somehow.")
         else:
             if self.x.val == 0:
                 if self.y > 0:
@@ -544,7 +547,7 @@ class Vec:
                 return 0-phi
 
             raise NotImplementedError(f"Vec.__pos__({self}): Evaluating with no"
-                    " PROBABILISTIC_UNCERTAINTIES, we slipped through the cracks somehow.")
+                    " probabilistic_uncertainties, we slipped through the cracks somehow.")
 
     @manage_calls
     def __neg__(self):
@@ -689,7 +692,7 @@ class Vec:
                 v.x = Uncertain_Value(0, self[0].unc)
                 v.y = Uncertain_Value(0, self[0].unc)
             else:
-                # Since evalfun already checks for PROBABILISTIC_UNCERTAINTIES, we don't need to
+                # Since evalfun already checks for probabilistic_uncertainties, we don't need to
                 # here.
                 r = self[0]
 
@@ -744,8 +747,8 @@ if __name__ == "__main__":
     print(f"  v = {v},  u = {u}")
 
     print(" --- Testing Uncertain_Values:")
-    print(" -- Calculating with PROBABILISTIC_UNCERTAINTIES=False")
-    PROBABILISTIC_UNCERTAINTIES=False
+    print(" -- Calculating with probabilistic_uncertainties=False")
+    this.probabilistic_uncertainties=False
     print(f"    OP    |   MAXIMAL VAL  | ANSWER")
     print(f" x  +  y  =     3+-0.4     = {x+y}")
     print(f" y  +  x  =     3+-0.4     = {y+x}")
@@ -759,8 +762,8 @@ if __name__ == "__main__":
     print(f" y  ** x  =     2+-0.58.   = {y**x}")
 
     print("")
-    print(" -- Calculating with PROBABILISTIC_UNCERTAINTIES=True")
-    PROBABILISTIC_UNCERTAINTIES=True
+    print(" -- Calculating with probabilistic_uncertainties=True")
+    this.probabilistic_uncertainties=True
     print(f"    OP    |   PROBAB. VAL  |   MAXIMAL VAL  | ANSWER")
     print(f" x  +  y  =     3+-0.28.   =     3+-0.4     = {x+y}")
     print(f" y  +  x  =     3+-0.28.   =     3+-0.4     = {y+x}")
